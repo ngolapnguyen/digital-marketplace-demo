@@ -6,8 +6,8 @@ import Web3Modal from "web3modal";
 
 import { nftmarketaddress, nftaddress } from "../config";
 
-import Market from "../artifacts/contracts/Market.sol/NFTMarket.json";
-import NFT from "../artifacts/contracts/NFT.sol/NFT.json";
+import NFT from "../contracts/NFT.json";
+import Market from "../contracts/NFTMarket.json";
 
 export default function MyAssets() {
   const [nfts, setNfts] = useState([]);

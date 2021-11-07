@@ -5,6 +5,7 @@ pragma solidity ^0.8.3;
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import "hardhat/console.sol";
 
@@ -14,6 +15,8 @@ contract NFTMarket is ReentrancyGuard {
     Counters.Counter private _itemsSold;
 
     address payable owner;
+    address public MDT1ContractAddress =
+        address(0xcB0928bDdd644Fb7d8e78444147F006D7d2F2d0e); // Token Contract Address on Ropsten
 
     // This "ether" value is to point to a token's number of decimal (e.g. 10e18), not ETH
     // These price should always be in the chain's token. If we deploy to Ethereum net, price will be calculated by ETH, Polygon -> MATIC...
@@ -43,6 +46,15 @@ contract NFTMarket is ReentrancyGuard {
         address owner,
         uint256 price,
         bool sold
+    );
+
+    event MarketItemSold(
+        uint256 indexed itemId,
+        address indexed nftContract,
+        uint256 indexed tokenId,
+        address seller,
+        address buyer,
+        uint256 price
     );
 
     /* Returns the listing price of the contract */
@@ -111,6 +123,51 @@ contract NFTMarket is ReentrancyGuard {
         idToMarketItem[itemId].sold = true;
         _itemsSold.increment();
         payable(owner).transfer(listingPrice);
+    }
+
+    /* Creates the sale of a marketplace item with custom token MDT1 & safeTransferFrom */
+    /* Transfers ownership of the item, as well as funds between parties */
+    function createMarketSaleWithCustomTokenAndSafeTransfer(
+        address nftContract,
+        uint256 itemId,
+        uint256 value
+    ) public nonReentrant {
+        uint256 price = idToMarketItem[itemId].price;
+        uint256 tokenId = idToMarketItem[itemId].tokenId;
+        require(
+            value == price,
+            "Please submit the asking price in order to complete the purchase"
+        );
+
+        // Transfer the nft value in custom token from buyer to seller
+        require(
+            IERC20(MDT1ContractAddress).transferFrom(
+                msg.sender,
+                idToMarketItem[itemId].seller,
+                value
+            )
+        );
+
+        // Transfer the nft from current address to the buyer address
+        IERC721(nftContract).safeTransferFrom(
+            address(this),
+            msg.sender,
+            tokenId
+        );
+        // Update the item's owner address
+        idToMarketItem[itemId].owner = payable(msg.sender);
+        idToMarketItem[itemId].sold = true;
+        _itemsSold.increment();
+        payable(owner).transfer(listingPrice);
+
+        emit MarketItemSold(
+            itemId,
+            nftContract,
+            tokenId,
+            idToMarketItem[itemId].seller,
+            msg.sender,
+            value
+        );
     }
 
     /* Returns all unsold market items */

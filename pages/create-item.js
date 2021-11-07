@@ -98,7 +98,7 @@ export default function CreateItem() {
           }
         />
         <input
-          placeholder="Asset Price in ETH"
+          placeholder="Asset Price in MDT1"
           className="mt-2 border rounded p-4"
           onChange={(e) =>
             updateFormInput({ ...formInput, price: e.target.value })
